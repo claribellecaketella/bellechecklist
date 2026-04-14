@@ -334,6 +334,7 @@ async function saveToCloud() {
 }
 
 async function sendTelegram(msg) {
+  if (!msg || msg.trim() === '' || msg.trim() === '.') return;
   try {
     await fetch(TG_API, {
       method: 'POST',
@@ -393,13 +394,24 @@ function startInlineEdit(id) {
 
 function saveInlineEdit(id, val) {
   const t = tasks.find(x=>x.id===id);
-  if (t && val.trim()) t.title = val.trim();
+  if (t && val.trim()) {
+    const changed = t.title !== val.trim();
+    t.title = val.trim();
+    if (changed) sendTelegram('✏️ <b>Task renamed!</b>\n📋 "' + t.title + '"\n👤 ' + t.assignee);
+  }
   inlineEditId = null; render(); saveToCloud();
 }
 
 function updateField(id, field, val) {
   const t = tasks.find(x=>x.id===id);
-  if (t) { t[field] = val; render(); saveToCloud(); }
+  if (!t) return;
+  const old = t[field];
+  t[field] = val;
+  if (old !== val && field === 'status') {
+    const lbl = val==='wip'?'🔥 In Progress':val==='done'?'✅ Done':'⏳ To Do';
+    sendTelegram('🔄 <b>Status updated!</b>\n📋 "' + t.title + '"\n👤 ' + t.assignee + '\n📊 Now: ' + lbl);
+  }
+  render(); saveToCloud();
 }
 
 function openModal(id) {
