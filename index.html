@@ -1,4 +1,4 @@
-]<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -394,18 +394,16 @@ function dateInfo(deadline, status) {
 function checkReminders() {
   const today = todayStr();
   if (reminded._date !== today) reminded = { _date: today };
-  tasks.forEach(t => {
-    if (t.status === 'done' || !t.deadline || !t.title) return;
-    const days = daysUntil(t.deadline);
-    const key  = t.id + '_' + today;
-    if (reminded[key]) return;
-    let msg = null;
-    if      (days < 0)   msg = '🚨 <b>OVERDUE!</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📅 Was due: ' + fmtDate(t.deadline);
-    else if (days === 0) msg = '⚠️ <b>Due TODAY!</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?');
-    else if (days === 1) msg = '⏰ <b>Due TOMORROW!</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📅 ' + fmtDate(t.deadline);
-    else if (days === 3) msg = '📅 <b>Due in 3 days</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📅 ' + fmtDate(t.deadline);
-    if (msg) { tg(msg); reminded[key] = true; }
-  });
+
+  // Saturday specific task reminder
+  const now = new Date();
+  const isSaturday = now.getDay() === 6;
+  const satKey = 'sat_' + today;
+  if (isSaturday && !reminded[satKey]) {
+    const msg = '⚙️ <b>Every Saturday Reminder!</b>\n\n📋 Update Last Count (column B) with your physical count\n📋 Then run <b>resetStockTrackerWeek</b>\n\n✅ Don\'t forget to tick it off after!';
+    tg(msg);
+    reminded[satKey] = true;
+  }
 }
 
 // ── Filter ───────────────────────────────────────────────
