@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Belle's Checklist 🔔</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #FFFFFF;
+  --bg2: #FAFAF9;
+  --border: #E9E9E7;
+  --border2: #F1F1EF;
+  --text: #1A1A18;
+  --muted: #9B9A97;
+  --hover: #F7F7F5;
+  --sans: 'Inter', sans-serif;
+}
+body { font-family: var(--sans); background: #F5F4F0; color: var(--text); min-height: 100vh; padding: 1.5rem 1rem 4rem; }
+.page { max-width: 900px; margin: 0 auto; }
+
+/* App shell */
+.app { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+
+/* Header */
+.hd { padding: 16px 18px 12px; border-bottom: 1px solid var(--border); }
+.hd-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hd-title { font-size: 18px; font-weight: 600; color: var(--text); }
+.hd-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sync-lbl { font-size: 11px; color: var(--muted); }
+.btn-add { font-family: var(--sans); font-size: 12px; font-weight: 600; padding: 7px 14px; background: var(--text); color: #fff; border: none; border-radius: 7px; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
+.btn-add:hover { opacity: 0.78; }
+.hd-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* Filters */
+.filters { display: flex; gap: 5px; padding: 9px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.fb { font-family: var(--sans); font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.1s; white-space: nowrap; }
+.fb:hover { background: var(--hover); color: var(--text); }
+.fb.on { background: var(--text); color: #fff; border-color: var(--text); }
+
+/* Progress */
+.prog-row { display: flex; align-items: center; gap: 10px; padding: 8px 18px; border-bottom: 1px solid var(--border); }
+.prog-bar { flex: 1; height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.prog-fill { height: 100%; background: #059669; border-radius: 99px; transition: width 0.35s ease; }
+.prog-txt { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* ── DESKTOP TABLE ── */
+.tbl-wrap { overflow-x: auto; }
+.tbl { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.tbl th { font-size: 10px; font-weight: 500; color: var(--muted); text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.06em; background: var(--bg2); white-space: nowrap; overflow: hidden; }
+.tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border2); vertical-align: middle; overflow: hidden; }
+.tbl tr.data-row:last-of-type td { border-bottom: 1px solid var(--border); }
+.tbl tr.data-row:hover td { background: var(--hover); }
+.tbl tr.row-done td { opacity: 0.42; }
+
+/* Status circle */
+.sc { width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid #D1D5DB; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; vertical-align: middle; }
+.sc:hover { border-color: #9CA3AF; }
+.sc.wip  { background: #FEF3C7; border-color: #D97706; }
+.sc.done { background: #059669; border-color: #059669; }
+.sc svg  { width: 9px; height: 9px; display: none; }
+.sc.done svg.ck { display: block; }
+.sc.wip  svg.dt { display: block; }
+
+/* Task title inline input */
+.t-inp {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--text); background: transparent; border: 1px solid transparent;
+  border-radius: 4px; padding: 1px 4px; width: 100%; outline: none; transition: border-color 0.1s;
+}
+.t-inp:hover { border-color: var(--border); }
+.t-inp:focus { border-color: #6366F1; background: #fff; }
+.t-inp.struck { text-decoration: line-through; color: var(--muted); }
+
+/* Notes inline input */
+.n-inp {
+  font-family: var(--sans); font-size: 11px;
+  color: var(--muted); background: transparent; border: 1px solid transparent;
+  border-radius: 4px; padding: 1px 4px; width: 100%; outline: none; transition: border-color 0.1s;
+}
+.n-inp:hover { border-color: var(--border); }
+.n-inp:focus { border-color: #6366F1; background: #fff; }
+.n-link { font-size: 11px; color: #2563EB; text-decoration: none; }
+.n-link:hover { text-decoration: underline; }
+
+/* Tags */
+.tag { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 3px; white-space: nowrap; display: inline-block; }
+.tag.urgent    { background: #FDDEDE; color: #991B1B; }
+.tag.ops       { background: #EDE9FE; color: #5B21B6; }
+.tag.admin     { background: #DBEAFE; color: #1E40AF; }
+.tag.marketing { background: #FEF3C7; color: #92400E; }
+.tag.finance   { background: #D1FAE5; color: #065F46; }
+.tag.general   { background: #F3F4F6; color: #4B5563; }
+.tag.s-todo    { background: #F3F4F6; color: #4B5563; }
+.tag.s-wip     { background: #FEF3C7; color: #92400E; }
+.tag.s-done    { background: #D1FAE5; color: #065F46; }
+
+/* Mini selects */
+.mini { font-family: var(--sans); font-size: 11px; border: none; background: transparent; color: var(--muted); cursor: pointer; outline: none; padding: 1px 0; width: 100%; }
+.mini:hover { color: var(--text); }
+input[type=date].d-inp { font-family: var(--sans); font-size: 11px; border: none; background: transparent; color: var(--muted); cursor: pointer; outline: none; padding: 1px 0; width: 100%; }
+.d-inp.ov   { color: #DC2626; font-weight: 600; }
+.d-inp.soon { color: #D97706; font-weight: 500; }
+.d-lbl { font-size: 11px; }
+.d-lbl.ov   { color: #DC2626; font-weight: 600; }
+.d-lbl.soon { color: #D97706; font-weight: 500; }
+.d-lbl.ok   { color: var(--muted); }
+
+/* Row actions */
+.acts { display: flex; gap: 2px; opacity: 0; transition: opacity 0.1s; }
+.tbl tr:hover .acts { opacity: 1; }
+.ib { background: transparent; border: none; cursor: pointer; color: var(--muted); width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.ib:hover { background: var(--border); color: var(--text); }
+.ib.del:hover { background: #FDDEDE; color: #991B1B; }
+
+/* Section header rows */
+.sec-row td { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; padding: 8px 10px 5px; border-bottom: none !important; background: transparent !important; }
+.sec-urgent    td { color: #991B1B; background: #FFF8F8 !important; border-top: 1px solid #FDDEDE !important; border-bottom: 1px solid #FDDEDE !important; }
+.sec-ops       td { color: #5B21B6; background: #F9F8FF !important; border-top: 1px solid #EDE9FE !important; border-bottom: 1px solid #EDE9FE !important; }
+.sec-admin     td { color: #1E40AF; background: #F0F7FF !important; border-top: 1px solid #DBEAFE !important; border-bottom: 1px solid #DBEAFE !important; }
+.sec-marketing td { color: #92400E; background: #FFFBF0 !important; border-top: 1px solid #FEF3C7 !important; border-bottom: 1px solid #FEF3C7 !important; }
+.sec-finance   td { color: #065F46; background: #F0FDF4 !important; border-top: 1px solid #D1FAE5 !important; border-bottom: 1px solid #D1FAE5 !important; }
+.sec-general   td { color: #4B5563; background: #F9FAFB !important; border-top: 1px solid #E5E7EB !important; border-bottom: 1px solid #E5E7EB !important; }
+
+/* Add row */
+.add-row td { padding: 8px 10px; color: var(--muted); font-size: 12px; cursor: pointer; border-bottom: none; }
+.add-row:hover td { color: var(--text); background: var(--hover); }
+
+/* Empty */
+.empty-cell { padding: 3rem !important; text-align: center; color: var(--muted); font-size: 13px; border: none !important; }
+
+/* ── MOBILE CARDS ── */
+.mobile-list { display: none; }
+.m-card { padding: 11px 14px; border-bottom: 1px solid var(--border2); }
+.m-card:last-child { border-bottom: none; }
+.m-card.row-done { opacity: 0.42; }
+.m-top { display: flex; align-items: flex-start; gap: 9px; }
+.m-body { flex: 1; min-width: 0; }
+.m-title { font-size: 13px; font-weight: 500; color: var(--text); word-break: break-word; }
+.m-title.struck { text-decoration: line-through; color: var(--muted); }
+.m-note { font-size: 11px; color: var(--muted); margin-top: 2px; word-break: break-all; }
+.m-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
+.m-who { font-size: 11px; color: var(--muted); }
+.m-acts { display: flex; gap: 3px; flex-shrink: 0; }
+
+/* Mobile section headers */
+.m-sec { padding: 8px 14px 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 1px solid var(--border2); }
+.m-sec.urgent    { color: #991B1B; background: #FFF8F8; }
+.m-sec.ops       { color: #5B21B6; background: #F9F8FF; }
+.m-sec.admin     { color: #1E40AF; background: #F0F7FF; }
+.m-sec.marketing { color: #92400E; background: #FFFBF0; }
+.m-sec.finance   { color: #065F46; background: #F0FDF4; }
+.m-sec.general   { color: #4B5563; background: #F9FAFB; }
+
+/* Mobile add button */
+.m-add { display: flex; align-items: center; gap: 6px; padding: 10px 14px; color: var(--muted); font-size: 12px; cursor: pointer; border-top: 1px solid var(--border); }
+.m-add:hover { color: var(--text); background: var(--hover); }
+
+/* Responsive */
+@media (max-width: 580px) {
+  body { padding: 0.75rem 0.5rem 3rem; }
+  .tbl-wrap { display: none; }
+  .mobile-list { display: block; }
+  .filters { padding: 7px 12px; }
+  .hd { padding: 12px 14px 10px; }
+  .prog-row { padding: 7px 14px; }
+}
+
+/* Modal */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.38); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+.overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 22px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; animation: pop 0.15s ease; }
+@keyframes pop { from{opacity:0;transform:scale(0.96);}to{opacity:1;transform:scale(1);} }
+.modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+.f { margin-bottom: 11px; }
+.f label { font-size: 10px; font-weight: 500; color: var(--muted); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.07em; }
+.f input, .f select, .f textarea { font-family: var(--sans); font-size: 13px; color: var(--text); background: #FAFAF9; border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; width: 100%; outline: none; transition: border-color 0.1s; }
+.f input:focus, .f select:focus, .f textarea:focus { border-color: #6366F1; background: #fff; }
+.f textarea { resize: vertical; min-height: 54px; }
+.frow { display: flex; gap: 9px; }
+.frow .f { flex: 1; }
+.mfoot { display: flex; justify-content: flex-end; gap: 7px; margin-top: 14px; }
+.btn-c { font-family: var(--sans); font-size: 12px; font-weight: 500; padding: 7px 14px; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; }
+.btn-c:hover { background: var(--hover); }
+.btn-s { font-family: var(--sans); font-size: 12px; font-weight: 600; padding: 7px 16px; border: none; border-radius: 7px; background: var(--text); color: #fff; cursor: pointer; }
+.btn-s:hover { opacity: 0.8; }
+
+.foot { font-size: 10px; color: var(--muted); text-align: center; margin-top: 1.25rem; }
+</style>
+</head>
+<body>
+<div class="page">
+<div class="app">
+
+  <!-- Header -->
+  <div class="hd">
+    <div class="hd-row">
+      <div class="hd-title">🔔 Belle's Checklist</div>
+      <div class="hd-right">
+        <span class="sync-lbl" id="syncLbl">⏳ Loading...</span>
+        <button class="btn-add" onclick="openModal()">+ New task</button>
+      </div>
+    </div>
+    <div class="hd-sub" id="dateLbl"></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <button class="fb on" onclick="setF('all')"       id="fb-all">All</button>
+    <button class="fb"    onclick="setF('todo')"      id="fb-todo">⏳ To do</button>
+    <button class="fb"    onclick="setF('wip')"       id="fb-wip">🔥 WIP</button>
+    <button class="fb"    onclick="setF('done')"      id="fb-done">✅ Done</button>
+    <button class="fb"    onclick="setF('me')"        id="fb-me">🔔 Me</button>
+    <button class="fb"    onclick="setF('boss')"      id="fb-boss">🫨 Boss</button>
+    <button class="fb"    onclick="setF('dana')"      id="fb-dana">👩🏻‍💻 Dana</button>
+    <button class="fb"    onclick="setF('urgent')"    id="fb-urgent">🚨 Urgent</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="prog-row">
+    <span class="prog-txt" id="progTxt">0 of 0 done</span>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <span class="prog-txt" id="progPct">0%</span>
+  </div>
+
+  <!-- Desktop Table -->
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:28px;"></th>
+          <th style="width:35%;">Task</th>
+          <th style="width:88px;">Status</th>
+          <th style="width:100px;">Category</th>
+          <th style="width:100px;">Assigned</th>
+          <th style="width:105px;">Deadline</th>
+          <th style="width:54px;"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Mobile Cards -->
+  <div class="mobile-list" id="mobileList"></div>
+
+</div>
+<div class="foot">🌐 Firebase sync · 🔄 15s · 🤖 Telegram alerts</div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2 id="mTitle">New task</h2>
+    <div class="f">
+      <label>Task</label>
+      <input type="text" id="fTitle" placeholder="What needs to be done?"/>
+    </div>
+    <div class="f">
+      <label>Notes / Link</label>
+      <textarea id="fNotes" placeholder="Add notes or paste a URL..."></textarea>
+    </div>
+    <div class="frow">
+      <div class="f">
+        <label>Category</label>
+        <select id="fCat">
+          <option value="general">💬 General</option>
+          <option value="urgent">🚨 Urgent</option>
+          <option value="ops">⚙️ Operations</option>
+          <option value="admin">📁 Admin</option>
+          <option value="marketing">📣 Marketing</option>
+          <option value="finance">💰 Finance</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>Assigned to</label>
+        <select id="fWho">
+          <option value="🔔 Me">🔔 Me</option>
+          <option value="🫨 Boss">🫨 Boss</option>
+          <option value="👩🏻‍💻 Dana">👩🏻‍💻 Dana</option>
+          <option value="🤝 Both">🤝 Both</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="f">
+        <label>Status</label>
+        <select id="fStatus">
+          <option value="todo">⏳ To do</option>
+          <option value="wip">🔥 In progress</option>
+          <option value="done">✅ Done</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>Deadline</label>
+        <input type="date" id="fDate"/>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-c" onclick="closeModal()">Cancel</button>
+      <button class="btn-s" onclick="saveTask()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FB   = 'https://bellechecklist-default-rtdb.asia-southeast1.firebasedatabase.app/checklist';
+const TG   = 'https://api.telegram.org/bot8666418850:AAFGMGqdtuc8BnC_qWowt5l75CTNpAOc3mA/sendMessage';
+const CHAT = '186999320';
+
+const CATS = {
+  urgent:    { icon:'🚨', label:'Urgent',     cls:'urgent' },
+  ops:       { icon:'⚙️', label:'Operations', cls:'ops' },
+  admin:     { icon:'📁', label:'Admin',       cls:'admin' },
+  marketing: { icon:'📣', label:'Marketing',   cls:'marketing' },
+  finance:   { icon:'💰', label:'Finance',     cls:'finance' },
+  general:   { icon:'💬', label:'General',     cls:'general' },
+};
+const CAT_ORDER = ['urgent','ops','admin','marketing','finance','general'];
+
+let tasks = [], nextId = 1, editId = null, saving = false, filter = 'all', reminded = {};
+
+// ── Telegram (safe — never sends empty) ──────────────────
+async function tg(msg) {
+  if (!msg || typeof msg !== 'string' || msg.trim().length < 3) return;
+  try {
+    await fetch(TG, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: CHAT, text: msg.trim(), parse_mode: 'HTML' })
+    });
+  } catch(e) {}
+}
+
+// ── Firebase ─────────────────────────────────────────────
+function setSyncLbl(t, c) {
+  const el = document.getElementById('syncLbl');
+  el.textContent = t; el.style.color = c || '#9B9A97';
+}
+
+async function loadCloud() {
+  try {
+    setSyncLbl('Syncing...', '#9B9A97');
+    const r = await fetch(FB + '.json');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (d && Array.isArray(d.tasks)) {
+      tasks  = d.tasks;
+      nextId = d.nextId || (tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1);
+    } else { tasks = []; nextId = 1; }
+    setSyncLbl('✓ Live', '#059669');
+    checkReminders();
+    render();
+  } catch(e) { setSyncLbl('⚠ ' + e.message, '#DC2626'); }
+}
+
+async function saveCloud() {
+  if (saving) return;
+  saving = true; setSyncLbl('Saving...', '#9B9A97');
+  try {
+    await fetch(FB + '.json', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tasks, nextId })
+    });
+    setSyncLbl('✓ Saved', '#059669');
+  } catch(e) { setSyncLbl('⚠ Save failed', '#DC2626'); }
+  saving = false;
+}
+
+// ── Dates ────────────────────────────────────────────────
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function daysUntil(dl) {
+  if (!dl) return null;
+  return Math.round((new Date(dl + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
+}
+function fmtDate(d) {
+  if (!d) return '';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function dateInfo(deadline, status) {
+  if (!deadline) return { cls: 'ok', txt: '' };
+  const d = daysUntil(deadline);
+  if (status === 'done') return { cls: 'ok', txt: fmtDate(deadline) };
+  if (d < 0)    return { cls: 'ov',   txt: '🚨 Overdue' };
+  if (d === 0)  return { cls: 'soon', txt: '⚠️ Today' };
+  if (d === 1)  return { cls: 'soon', txt: '⏰ Tomorrow' };
+  if (d <= 3)   return { cls: 'soon', txt: '⏰ ' + d + 'd left' };
+  return { cls: 'ok', txt: fmtDate(deadline) };
+}
+
+// ── Reminders ────────────────────────────────────────────
+function checkReminders() {
+  const today = todayStr();
+  if (reminded._date !== today) reminded = { _date: today };
+  tasks.forEach(t => {
+    if (t.status === 'done' || !t.deadline || !t.title) return;
+    const days = daysUntil(t.deadline);
+    const key  = t.id + '_' + today;
+    if (reminded[key]) return;
+    let msg = null;
+    if      (days < 0)   msg = '🚨 <b>OVERDUE!</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📅 Was due: ' + fmtDate(t.deadline);
+    else if (days === 0) msg = '⚠️ <b>Due TODAY!</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?');
+    else if (days === 1) msg = '⏰ <b>Due TOMORROW!</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📅 ' + fmtDate(t.deadline);
+    else if (days === 3) msg = '📅 <b>Due in 3 days</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📅 ' + fmtDate(t.deadline);
+    if (msg) { tg(msg); reminded[key] = true; }
+  });
+}
+
+// ── Filter ───────────────────────────────────────────────
+function setF(f) {
+  filter = f;
+  document.querySelectorAll('.fb').forEach(b => b.classList.remove('on'));
+  const btn = document.getElementById('fb-' + f);
+  if (btn) btn.classList.add('on');
+  render();
+}
+
+function getFiltered() {
+  if (filter === 'all')    return tasks;
+  if (filter === 'todo')   return tasks.filter(t => t.status === 'todo');
+  if (filter === 'wip')    return tasks.filter(t => t.status === 'wip');
+  if (filter === 'done')   return tasks.filter(t => t.status === 'done');
+  if (filter === 'me')     return tasks.filter(t => t.who === '🔔 Me');
+  if (filter === 'boss')   return tasks.filter(t => t.who === '🫨 Boss');
+  if (filter === 'dana')   return tasks.filter(t => t.who === '👩🏻‍💻 Dana');
+  if (filter === 'urgent') return tasks.filter(t => t.cat === 'urgent');
+  return tasks;
+}
+
+// ── Actions ──────────────────────────────────────────────
+function cycleStatus(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || !t.title) return;
+  t.status = { todo: 'wip', wip: 'done', done: 'todo' }[t.status];
+  const lbl = { todo: '⏳ To Do', wip: '🔥 In Progress', done: '✅ Done' }[t.status];
+  tg('🔄 <b>Status changed</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📊 ' + lbl);
+  render(); saveCloud();
+}
+
+function changeField(id, field, val) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || t[field] === val) return;
+  if (field === 'status' && t.title) {
+    const lbl = { todo: '⏳ To Do', wip: '🔥 In Progress', done: '✅ Done' }[val];
+    tg('🔄 <b>Status changed</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📊 ' + lbl);
+  }
+  t[field] = val; render(); saveCloud();
+}
+
+function saveTitle(id, val) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || !val || !val.trim()) return;
+  if (val.trim() === t.title) return;
+  t.title = val.trim();
+  tg('✏️ <b>Task renamed</b>\n📋 "' + t.title + '"');
+  saveCloud();
+}
+
+function saveNotes(id, val) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || t.notes === val.trim()) return;
+  t.notes = val.trim(); saveCloud();
+}
+
+function deleteTask(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t || !confirm('Delete "' + t.title + '"?')) return;
+  tg('🗑️ <b>Task deleted</b>\n📋 "' + t.title + '"');
+  tasks = tasks.filter(x => x.id !== id);
+  render(); saveCloud();
+}
+
+// ── Modal ────────────────────────────────────────────────
+function openModal(id) {
+  editId = id || null;
+  const t = id ? tasks.find(x => x.id === id) : null;
+  document.getElementById('mTitle').textContent  = t ? 'Edit task' : 'New task';
+  document.getElementById('fTitle').value  = t ? t.title : '';
+  document.getElementById('fNotes').value  = t ? (t.notes || '') : '';
+  document.getElementById('fCat').value    = t ? (t.cat || 'general') : 'general';
+  document.getElementById('fWho').value    = t ? (t.who || '🔔 Me') : '🔔 Me';
+  document.getElementById('fStatus').value = t ? (t.status || 'todo') : 'todo';
+  document.getElementById('fDate').value   = t ? (t.deadline || '') : '';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('fTitle').focus(), 60);
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  editId = null;
+}
+
+function saveTask() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { document.getElementById('fTitle').focus(); return; }
+  const notes    = document.getElementById('fNotes').value.trim();
+  const cat      = document.getElementById('fCat').value;
+  const who      = document.getElementById('fWho').value;
+  const status   = document.getElementById('fStatus').value;
+  const deadline = document.getElementById('fDate').value;
+  const ci       = CATS[cat] || CATS.general;
+  const dl       = deadline ? '\n📅 ' + fmtDate(deadline) : '';
+
+  if (editId) {
+    const t = tasks.find(x => x.id === editId);
+    if (t) {
+      Object.assign(t, { title, notes, cat, who, status, deadline });
+      tg('✏️ <b>Task edited</b>\n📋 "' + title + '"\n👤 ' + who + dl);
+    }
+  } else {
+    tasks.push({ id: nextId++, title, notes, cat, who, status, deadline });
+    tg('✨ <b>New task</b>\n📋 "' + title + '"\n👤 ' + who + '\n🏷️ ' + ci.icon + ' ' + ci.label + dl);
+  }
+  render(); saveCloud(); closeModal();
+}
+
+document.getElementById('fTitle').addEventListener('keydown', e => { if (e.key === 'Enter') saveTask(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── SVGs ─────────────────────────────────────────────────
+const CK = '<svg class="ck" viewBox="0 0 9 9" fill="none"><polyline points="1,4.5 3.5,7 8,1.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const DT = '<svg class="dt" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="2" fill="#D97706"/></svg>';
+
+// ── Helpers ──────────────────────────────────────────────
+function catSel(id, cur) {
+  return '<select class="mini" onchange="changeField(' + id + ',\'cat\',this.value)">' +
+    CAT_ORDER.map(c => '<option value="' + c + '"' + ((cur||'general')===c?' selected':'') + '>' + CATS[c].icon + ' ' + CATS[c].label + '</option>').join('') +
+  '</select>';
+}
+function whoSel(id, cur) {
+  return '<select class="mini" onchange="changeField(' + id + ',\'who\',this.value)">' +
+    ['🔔 Me','🫨 Boss','👩🏻‍💻 Dana','🤝 Both'].map(w => '<option' + (cur===w?' selected':'') + '>' + w + '</option>').join('') +
+  '</select>';
+}
+function statusSel(id, cur) {
+  return '<select class="mini" onchange="changeField(' + id + ',\'status\',this.value)">' +
+    [['todo','⏳ To do'],['wip','🔥 WIP'],['done','✅ Done']].map(([v,l]) => '<option value="' + v + '"' + (cur===v?' selected':'') + '>' + l + '</option>').join('') +
+  '</select>';
+}
+
+// ── Render ───────────────────────────────────────────────
+function render() {
+  const tbody   = document.getElementById('tbody');
+  const mList   = document.getElementById('mobileList');
+  const progFill = document.getElementById('progFill');
+  const progPct  = document.getElementById('progPct');
+  const progTxt  = document.getElementById('progTxt');
+
+  const total = tasks.length;
+  const done  = tasks.filter(t => t.status === 'done').length;
+  const pct   = total ? Math.round(done / total * 100) : 0;
+  progFill.style.width = pct + '%';
+  progPct.textContent  = pct + '%';
+  progTxt.textContent  = done + ' of ' + total + ' done';
+
+  const filtered = getFiltered();
+
+  // ── Desktop ──
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">No tasks here — add one!</td></tr>';
+  } else {
+    let html = '';
+    function rowsFor(list) {
+      return list.map(t => {
+        const ci  = CATS[t.cat || 'general'] || CATS.general;
+        const di  = dateInfo(t.deadline, t.status);
+        const nt  = t.notes ? (t.notes.startsWith('http')
+          ? '<a class="n-link" href="' + t.notes + '" target="_blank" rel="noopener">' + t.notes + '</a>'
+          : t.notes) : '';
+        return '<tr class="data-row' + (t.status === 'done' ? ' row-done' : '') + '">' +
+          '<td><button class="sc ' + t.status + '" onclick="cycleStatus(' + t.id + ')">' + CK + DT + '</button></td>' +
+          '<td>' +
+            '<input class="t-inp' + (t.status==='done'?' struck':'') + '" value="' + t.title.replace(/"/g,'&quot;') + '" onblur="saveTitle(' + t.id + ',this.value)" onkeydown="if(event.key===\'Enter\')this.blur()"/>' +
+            (nt ? '<div style="padding:0 4px;">' + nt + '</div>' : '') +
+          '</td>' +
+          '<td>' + statusSel(t.id, t.status) + '</td>' +
+          '<td><span class="tag ' + ci.cls + '">' + ci.icon + ' ' + ci.label + '</span></td>' +
+          '<td>' + whoSel(t.id, t.who) + '</td>' +
+          '<td>' +
+            (t.deadline
+              ? '<span class="d-lbl ' + di.cls + '">' + di.txt + '</span>'
+              : '<input type="date" class="d-inp" onchange="changeField(' + t.id + ',\'deadline\',this.value)"/>') +
+          '</td>' +
+          '<td><div class="acts">' +
+            '<button class="ib" onclick="openModal(' + t.id + ')" title="Edit">✏️</button>' +
+            '<button class="ib del" onclick="deleteTask(' + t.id + ')" title="Delete">🗑</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    if (filter === 'all') {
+      CAT_ORDER.forEach(cat => {
+        const group = filtered.filter(t => (t.cat || 'general') === cat);
+        if (!group.length) return;
+        const ci = CATS[cat];
+        html += '<tr class="sec-row sec-' + cat + '"><td colspan="7">' + ci.icon + ' ' + ci.label + ' (' + group.length + ')</td></tr>';
+        html += rowsFor(group);
+      });
+    } else {
+      html = rowsFor(filtered);
+    }
+    html += '<tr class="add-row" onclick="openModal()"><td colspan="7">+ New task</td></tr>';
+    tbody.innerHTML = html;
+  }
+
+  // ── Mobile ──
+  if (!filtered.length) {
+    mList.innerHTML = '<div style="padding:2rem;text-align:center;color:#9B9A97;font-size:13px;">No tasks here — add one!</div>';
+  } else {
+    let mhtml = '';
+    function mRowsFor(list) {
+      return list.map(t => {
+        const ci = CATS[t.cat || 'general'] || CATS.general;
+        const di = dateInfo(t.deadline, t.status);
+        const nt = t.notes ? (t.notes.startsWith('http')
+          ? '<a class="n-link" href="' + t.notes + '" target="_blank" rel="noopener">' + t.notes + '</a>'
+          : t.notes) : '';
+        return '<div class="m-card' + (t.status==='done'?' row-done':'') + '">' +
+          '<div class="m-top">' +
+            '<button class="sc ' + t.status + '" style="margin-top:3px;flex-shrink:0;" onclick="cycleStatus(' + t.id + ')">' + CK + DT + '</button>' +
+            '<div class="m-body">' +
+              '<div class="m-title' + (t.status==='done'?' struck':'') + '">' + t.title + '</div>' +
+              (nt ? '<div class="m-note">' + nt + '</div>' : '') +
+              '<div class="m-tags">' +
+                '<span class="tag s-' + t.status + '">' + (t.status==='todo'?'⏳ To do':t.status==='wip'?'🔥 WIP':'✅ Done') + '</span>' +
+                '<span class="tag ' + ci.cls + '">' + ci.icon + ' ' + ci.label + '</span>' +
+                '<span class="m-who">' + (t.who||'') + '</span>' +
+                (di.txt ? '<span class="d-lbl ' + di.cls + '">' + di.txt + '</span>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="m-acts">' +
+              '<button class="ib" onclick="openModal(' + t.id + ')" title="Edit">✏️</button>' +
+              '<button class="ib del" onclick="deleteTask(' + t.id + ')" title="Delete">🗑</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    if (filter === 'all') {
+      CAT_ORDER.forEach(cat => {
+        const group = filtered.filter(t => (t.cat || 'general') === cat);
+        if (!group.length) return;
+        const ci = CATS[cat];
+        mhtml += '<div class="m-sec ' + cat + '">' + ci.icon + ' ' + ci.label + ' (' + group.length + ')</div>';
+        mhtml += mRowsFor(group);
+      });
+    } else {
+      mhtml = mRowsFor(filtered);
+    }
+    mhtml += '<div class="m-add" onclick="openModal()"><span style="font-size:16px;color:#9B9A97;">+</span> New task</div>';
+    mList.innerHTML = mhtml;
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────
+document.getElementById('dateLbl').textContent =
+  new Date().toLocaleDateString('en-MY', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+loadCloud();
+setInterval(loadCloud, 15000);
+setInterval(checkReminders, 60 * 60 * 1000);
+</script>
+</body>
+</html>
