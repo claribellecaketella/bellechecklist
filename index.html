@@ -322,8 +322,19 @@ const CAT_ORDER = ['urgent','ops','admin','marketing','finance','general'];
 let tasks = [], nextId = 1, editId = null, saving = false, filter = 'all', reminded = {};
 
 // ── Telegram (safe — never sends empty) ──────────────────
+// A title is "real" only if it contains at least one letter or digit
+// (any language). Punctuation / whitespace / emoji-only titles are
+// treated as accidental (e.g. mobile keyboard autocorrect dropping a ".")
+// and will not trigger notifications.
+function hasRealContent(s) {
+  return typeof s === 'string' && /[\p{L}\p{N}]/u.test(s);
+}
 async function tg(msg) {
   if (!msg || typeof msg !== 'string' || msg.trim().length < 3) return;
+  // Defense-in-depth: if the stripped-HTML payload has fewer than 3
+  // letter/digit characters, don't send (catches stray "." ghosts).
+  const plain = msg.replace(/<[^>]+>/g, '');
+  if ((plain.match(/[\p{L}\p{N}]/gu) || []).length < 3) return;
   try {
     await fetch(TG, {
       method: 'POST',
@@ -433,14 +444,16 @@ function cycleStatus(id) {
   if (!t || !t.title) return;
   t.status = { todo: 'wip', wip: 'done', done: 'todo' }[t.status];
   const lbl = { todo: '⏳ To Do', wip: '🔥 In Progress', done: '✅ Done' }[t.status];
-  tg('🔄 <b>Status changed</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📊 ' + lbl);
+  if (hasRealContent(t.title)) {
+    tg('🔄 <b>Status changed</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📊 ' + lbl);
+  }
   render(); saveCloud();
 }
 
 function changeField(id, field, val) {
   const t = tasks.find(x => x.id === id);
   if (!t || t[field] === val) return;
-  if (field === 'status' && t.title) {
+  if (field === 'status' && hasRealContent(t.title)) {
     const lbl = { todo: '⏳ To Do', wip: '🔥 In Progress', done: '✅ Done' }[val];
     tg('🔄 <b>Status changed</b>\n📋 "' + t.title + '"\n👤 ' + (t.who||'?') + '\n📊 ' + lbl);
   }
@@ -450,8 +463,12 @@ function changeField(id, field, val) {
 function saveTitle(id, val) {
   const t = tasks.find(x => x.id === id);
   if (!t || !val || !val.trim()) return;
-  if (val.trim() === t.title) return;
-  t.title = val.trim();
+  const newTitle = val.trim();
+  if (newTitle === t.title) return;
+  // Reject accidental/trivial renames (e.g. mobile keyboard autocorrect
+  // turning a blur into just "." — root cause of ghost notifications).
+  if (!hasRealContent(newTitle)) { render(); return; }
+  t.title = newTitle;
   tg('✏️ <b>Task renamed</b>\n📋 "' + t.title + '"');
   saveCloud();
 }
@@ -465,7 +482,9 @@ function saveNotes(id, val) {
 function deleteTask(id) {
   const t = tasks.find(x => x.id === id);
   if (!t || !confirm('Delete "' + t.title + '"?')) return;
-  tg('🗑️ <b>Task deleted</b>\n📋 "' + t.title + '"');
+  if (hasRealContent(t.title)) {
+    tg('🗑️ <b>Task deleted</b>\n📋 "' + t.title + '"');
+  }
   tasks = tasks.filter(x => x.id !== id);
   render(); saveCloud();
 }
@@ -492,7 +511,7 @@ function closeModal() {
 
 function saveTask() {
   const title = document.getElementById('fTitle').value.trim();
-  if (!title) { document.getElementById('fTitle').focus(); return; }
+  if (!title || !hasRealContent(title)) { document.getElementById('fTitle').focus(); return; }
   const notes    = document.getElementById('fNotes').value.trim();
   const cat      = document.getElementById('fCat').value;
   const who      = document.getElementById('fWho').value;
