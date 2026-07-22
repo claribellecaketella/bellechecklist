@@ -388,7 +388,7 @@ function daysUntil(dl) {
 }
 function fmtDate(d) {
   if (!d) return '';
-  return new Date(d + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 function dateInfo(deadline, status) {
   if (!deadline) return { cls: 'ok', txt: '' };
